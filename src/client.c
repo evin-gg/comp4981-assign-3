@@ -7,7 +7,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define MSGLEN 13
+// #define MSGLEN 13
+#define BUFSIZE 1024
 
 typedef struct data_t
 {
@@ -30,23 +31,53 @@ int main(int argc, char *argv[])
     char  *addr_str = NULL;
     char  *port_str = NULL;
     int    retval   = EXIT_SUCCESS;
-    char   buf[MSGLEN + 1];    // TEST
-    buf[MSGLEN] = '\0';
+    // char   buf[BUFSIZE + 1];
+    // buf[BUFSIZE] = '\0';
 
     parse_args(argc, argv, &addr_str, &port_str, &data.port);
     setup(&data, addr_str);
 
-    // TEST
-
-    read(data.fd, buf, MSGLEN);
-    write(STDOUT_FILENO, buf, MSGLEN + 1);
-
-    // TEST
+    // read(data.fd, buf, MSGLEN);
+    // write(STDOUT_FILENO, buf, MSGLEN + 1);
 
     /* Do stuff here */
+    while(running)
+    {
+        char    buffer[BUFSIZE];
+        ssize_t bytes_received;
 
+        printf("> ");
+        fgets(buffer, BUFSIZE, stdin);
+        buffer[strcspn(buffer, "\n")] = 0;    // Remove newline
+
+        if(strcmp(buffer, "exit") == 0)
+        {
+            break;
+        }
+
+        // Send message
+        send(data.fd, buffer, strlen(buffer), 0);
+
+        // Receive response
+        memset(buffer, 0, BUFSIZE);
+        bytes_received = recv(data.fd, buffer, BUFSIZE, 0);
+        if(bytes_received <= 0)
+        {
+            printf("Server disconnected.\n");
+            break;
+        }
+
+        printf("Server response: %s\n", buffer);
+    }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"     // Example warning suppression
+#pragma GCC diagnostic ignored "-Wunused-function"     // If needed
+#pragma GCC diagnostic ignored "-Wunreachable-code"    // If needed'
     cleanup(&data);
     exit(retval);
+
+#pragma GCC diagnostic pop
 }
 
 static void setup(data_t *d, const char *addr_str)

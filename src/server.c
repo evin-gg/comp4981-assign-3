@@ -7,6 +7,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#define BUFFER_SIZE 1024
+
 typedef struct data_t
 {
     int                fd;
@@ -38,13 +40,25 @@ int main(void)
         goto cleanup;
     }
 
-    // TEST
-
-    write(data.cfd, msg, strlen(msg));
-
-    // TEST
-
     /* Do stuff here */
+    while(1)
+    {
+        char    buffer[BUFFER_SIZE];
+        ssize_t bytes_received;
+
+        memset(buffer, 0, BUFFER_SIZE);
+        bytes_received = recv(data.cfd, buffer, BUFFER_SIZE, 0);
+        if(bytes_received <= 0)
+        {
+            printf("Client disconnected.\n");
+            break;
+        }
+
+        printf("Received: %s\n", buffer);
+
+        // Send static response
+        send(data.cfd, msg, strlen(msg), 0);
+    }
 
 cleanup:
     cleanup(&data);
