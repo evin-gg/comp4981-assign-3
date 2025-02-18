@@ -43,8 +43,7 @@ int main(int argc, char *argv[])
     /* Do stuff here */
     while(running)
     {
-        char    buffer[BUFSIZE];
-        ssize_t bytes_received;
+        char buffer[BUFSIZE];
 
         printf("> ");
         fgets(buffer, BUFSIZE, stdin);
@@ -55,19 +54,24 @@ int main(int argc, char *argv[])
             break;
         }
 
-        // Send message
-        send(data.fd, buffer, strlen(buffer), 0);
-
-        // Receive response
-        memset(buffer, 0, BUFSIZE);
-        bytes_received = recv(data.fd, buffer, BUFSIZE, 0);
-        if(bytes_received <= 0)
+        if(running)
         {
-            printf("Server disconnected.\n");
-            break;
-        }
+            ssize_t bytes_received;
 
-        printf("Server response: %s\n", buffer);
+            // Send message
+            send(data.fd, buffer, strlen(buffer), 0);
+
+            // Receive response
+            memset(buffer, 0, BUFSIZE);
+            bytes_received = recv(data.fd, buffer, BUFSIZE, 0);
+            if(bytes_received <= 0)
+            {
+                printf("Server disconnected.\n");
+                break;
+            }
+
+            printf("Server response: %s\n", buffer);
+        }
     }
 
 #pragma GCC diagnostic push

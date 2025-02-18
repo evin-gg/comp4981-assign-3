@@ -1,4 +1,5 @@
 #include "../include/setup.h"
+#include "../include/utils.h"
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
@@ -8,6 +9,7 @@
 #include <unistd.h>
 
 #define BUFFER_SIZE 1024
+#define MAX_ARGS 10
 
 typedef struct data_t
 {
@@ -44,20 +46,51 @@ int main(void)
     while(1)
     {
         char    buffer[BUFFER_SIZE];
+        char   *args[MAX_ARGS];
         ssize_t bytes_received;
+        pid_t   p;
 
         memset(buffer, 0, BUFFER_SIZE);
         bytes_received = recv(data.cfd, buffer, BUFFER_SIZE, 0);
         if(bytes_received <= 0)
         {
             printf("Client disconnected.\n");
+            close(data.cfd);
             break;
         }
 
+        tokenize(buffer, args);
+        findDir(args);
         printf("Received: %s\n", buffer);
 
-        // Send static response
+        p = fork();
+        if(p < 0)
+        {
+            perror("Fork");
+        }
+
+        else if(p == 0)
+        {
+            if(execv(args[0], args) == -1)
+            {
+                perror("execv");
+            }
+
+            for(int i = 0; args[i] != NULL; i++)
+            {
+                free(args[i]);
+            }
+
+            exit(0);
+        }
+
+        // Send static response for now
         send(data.cfd, msg, strlen(msg), 0);
+
+        for(int i = 0; args[i] != NULL; i++)
+        {
+            free(args[i]);
+        }
     }
 
 cleanup:
