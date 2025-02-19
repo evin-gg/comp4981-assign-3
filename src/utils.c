@@ -41,3 +41,62 @@ void findDir(char *args[MAX_ARGS])
         args[0] = strdup("/usr/bin/echo");
     }
 }
+
+int isBuiltin(char **args)
+{
+    int flag;
+
+    if(strcmp(args[0], "cd") == 0 || strcmp(args[0], "type") == 0 || strcmp(args[0], "exit") == 0)
+    {
+        flag = 1;
+    }
+
+    else
+    {
+        flag = 0;
+    }
+
+    return flag;
+}
+
+void handleBuiltin(char **args, int cfd)
+{
+    if(strcmp(args[0], "cd") == 0)
+    {
+        if(args[1] == NULL)
+        {
+            send(cfd, "cd: No specified directory", CD_ERR, 0);
+        }
+
+        else
+        {
+            if(chdir(args[1]) == -1)
+            {
+                send(cfd, "cd: No specified directory", CD_ERR, 0);
+            }
+        }
+    }
+
+    else if(strcmp(args[0], "type") == 0)
+    {
+        printf("\nThe Type Arg: %s\n", args[1]);
+        if(args[1] == NULL)
+        {
+            send(cfd, "type: missing argument\n", TYPE_ERR, 0);
+        }
+        else
+        {
+            char response[BUFFER_SIZE];
+            snprintf(response, sizeof(response), "%s is a shell built-in\n", args[1]);
+            send(cfd, response, strlen(response), 0);
+        }
+    }
+}
+
+void freeArgs(char **args)
+{
+    for(int i = 0; args[i] != NULL; i++)
+    {
+        free(args[i]);
+    }
+}

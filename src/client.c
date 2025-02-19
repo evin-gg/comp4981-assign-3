@@ -9,6 +9,8 @@
 
 // #define MSGLEN 13
 #define BUFSIZE 1024
+#define SHELL_MSG 10
+#define EXIT_MSG 25
 
 typedef struct data_t
 {
@@ -45,12 +47,14 @@ int main(int argc, char *argv[])
     {
         char buffer[BUFSIZE];
 
-        printf("> ");
+        // printf("remote - shell $~ ");
+        write(STDOUT_FILENO, "shell$ ~ ", SHELL_MSG);
         fgets(buffer, BUFSIZE, stdin);
         buffer[strcspn(buffer, "\n")] = 0;    // Remove newline
 
         if(strcmp(buffer, "exit") == 0)
         {
+            write(STDOUT_FILENO, "Exiting remote shell...\n", EXIT_MSG);
             break;
         }
 
@@ -70,18 +74,12 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            printf("Server response: %s\n", buffer);
+            printf("Shell: %s\n", buffer);
         }
     }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"     // Example warning suppression
-#pragma GCC diagnostic ignored "-Wunused-function"     // If needed
-#pragma GCC diagnostic ignored "-Wunreachable-code"    // If needed'
     cleanup(&data);
     exit(retval);
-
-#pragma GCC diagnostic pop
 }
 
 static void setup(data_t *d, const char *addr_str)

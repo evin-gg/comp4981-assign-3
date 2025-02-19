@@ -28,10 +28,10 @@ static void cleanup(const data_t *d);
 
 int main(void)
 {
-    data_t      data = {0};
-    char        addr_str[INET_ADDRSTRLEN];
-    int         retval = EXIT_SUCCESS;
-    const char *msg    = "Hello, World\n";    // TEST
+    data_t data = {0};
+    char   addr_str[INET_ADDRSTRLEN];
+    int    retval = EXIT_SUCCESS;
+    // const char *msg    = "Hello, World\n";    // TEST
 
     setup(&data, addr_str);
 
@@ -48,7 +48,6 @@ int main(void)
         char    buffer[BUFFER_SIZE];
         char   *args[MAX_ARGS];
         ssize_t bytes_received;
-        pid_t   p;
 
         memset(buffer, 0, BUFFER_SIZE);
         bytes_received = recv(data.cfd, buffer, BUFFER_SIZE, 0);
@@ -63,34 +62,37 @@ int main(void)
         findDir(args);
         printf("Received: %s\n", buffer);
 
-        p = fork();
-        if(p < 0)
+        if(isBuiltin(args))
         {
-            perror("Fork");
+            write(STDOUT_FILENO, "AAAAAAAAA", MAX_ARGS);
+            handleBuiltin(args, data.cfd);
         }
 
-        else if(p == 0)
+        else
         {
-            if(execv(args[0], args) == -1)
+            pid_t p;
+            p = fork();
+            if(p < 0)
             {
-                perror("execv");
+                perror("Fork");
             }
 
-            for(int i = 0; args[i] != NULL; i++)
+            else if(p == 0)
             {
-                free(args[i]);
+                if(execv(args[0], args) == -1)
+                {
+                    perror("execv");
+                }
+
+                freeArgs(args);
+                exit(0);
             }
 
-            exit(0);
+            // Send static response for now
+            send(data.cfd, "AAAAAAAAA", MAX_ARGS, 0);
         }
 
-        // Send static response for now
-        send(data.cfd, msg, strlen(msg), 0);
-
-        for(int i = 0; args[i] != NULL; i++)
-        {
-            free(args[i]);
-        }
+        freeArgs(args);
     }
 
 cleanup:
