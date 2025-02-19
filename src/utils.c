@@ -74,6 +74,7 @@ void handleBuiltin(char **args, int cfd)
             {
                 send(cfd, "cd: No specified directory", CD_ERR, 0);
             }
+            send(cfd, "Successful directory change", DIR_SUCCESS, 0);
         }
     }
 
@@ -100,3 +101,32 @@ void freeArgs(char **args)
         free(args[i]);
     }
 }
+
+// void forkCmd(char **args)
+// {
+//     pid_t p;
+//     p = fork();
+//     if(p < 0)
+//     {
+//         perror("Fork");
+//     }
+
+//     else if(p == 0)
+//     {
+//         // if(execv(args[0], args) == -1)
+//         // {
+//         //     perror("execv");
+//         // }
+
+//         execv(args[0], args);
+
+//         freeArgs(args);
+//         exit(0);
+//     }
+
+//     else
+//     {
+//         wait(NULL);
+//         freeArgs(args);
+//     }
+// }

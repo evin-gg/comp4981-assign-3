@@ -71,6 +71,10 @@ int main(void)
         else
         {
             pid_t p;
+            // int   stdout_copy;
+
+            // stdout_copy = dup(STDOUT_FILENO);
+
             p = fork();
             if(p < 0)
             {
@@ -79,17 +83,20 @@ int main(void)
 
             else if(p == 0)
             {
+                dup2(data.cfd, STDOUT_FILENO);
                 if(execv(args[0], args) == -1)
                 {
                     perror("execv");
                 }
+                // dup2(stdout_copy, STDOUT_FILENO);
 
                 freeArgs(args);
+
                 exit(0);
             }
 
             // Send static response for now
-            send(data.cfd, "AAAAAAAAA", MAX_ARGS, 0);
+            // send(data.cfd, "AAAAAAAAA", MAX_ARGS, 0);
         }
 
         freeArgs(args);

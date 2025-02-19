@@ -33,24 +33,24 @@ int main(int argc, char *argv[])
     char  *addr_str = NULL;
     char  *port_str = NULL;
     int    retval   = EXIT_SUCCESS;
-    // char   buf[BUFSIZE + 1];
-    // buf[BUFSIZE] = '\0';
 
     parse_args(argc, argv, &addr_str, &port_str, &data.port);
     setup(&data, addr_str);
-
-    // read(data.fd, buf, MSGLEN);
-    // write(STDOUT_FILENO, buf, MSGLEN + 1);
 
     /* Do stuff here */
     while(running)
     {
         char buffer[BUFSIZE];
 
-        // printf("remote - shell $~ ");
         write(STDOUT_FILENO, "shell$ ~ ", SHELL_MSG);
         fgets(buffer, BUFSIZE, stdin);
         buffer[strcspn(buffer, "\n")] = 0;    // Remove newline
+
+        if(buffer[0] == '\0')
+        {
+            write(STDOUT_FILENO, "", 1);    // Print just a newline
+            continue;                       // Skip sending or receiving any data
+        }
 
         if(strcmp(buffer, "exit") == 0)
         {
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            printf("Shell: %s\n", buffer);
+            printf("\n%s\n", buffer);
         }
     }
 
