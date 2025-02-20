@@ -1,4 +1,5 @@
 #include "../include/setup.h"
+#include "../include/utils.h"
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
@@ -7,17 +8,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-// #define MSGLEN 13
-#define BUFSIZE 1024
 #define SHELL_MSG 10
-#define EXIT_MSG 25
 
 typedef struct data_t
 {
     int                fd;
     struct sockaddr_in addr;
-    // socklen_t          addr_len;
-    in_port_t port;
+    in_port_t          port;
 } data_t;
 
 static volatile sig_atomic_t running = 1;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
@@ -37,44 +34,35 @@ int main(int argc, char *argv[])
     parse_args(argc, argv, &addr_str, &port_str, &data.port);
     setup(&data, addr_str);
 
-    /* Do stuff here */
     while(running)
     {
-        char buffer[BUFSIZE];
+        char buffer[BUFFER_SIZE];
 
         write(STDOUT_FILENO, "shell$ ~ ", SHELL_MSG);
-        fgets(buffer, BUFSIZE, stdin);
-        buffer[strcspn(buffer, "\n")] = 0;    // Remove newline
+
+        if(read_input(buffer, BUFFER_SIZE) < 0)
+        {
+            continue;
+        }
 
         if(buffer[0] == '\0')
         {
-            write(STDOUT_FILENO, "", 1);    // Print just a newline
-            continue;                       // Skip sending or receiving any data
-        }
-
-        if(strcmp(buffer, "exit") == 0)
-        {
-            write(STDOUT_FILENO, "Exiting remote shell...\n", EXIT_MSG);
-            break;
+            continue;
         }
 
         if(running)
         {
-            ssize_t bytes_received;
-
-            // Send message
-            send(data.fd, buffer, strlen(buffer), 0);
-
-            // Receive response
-            memset(buffer, 0, BUFSIZE);
-            bytes_received = recv(data.fd, buffer, BUFSIZE, 0);
-            if(bytes_received <= 0)
+            if(strcmp(buffer, "exit") == 0)
             {
-                printf("Server disconnected.\n");
-                break;
+                running = 0;
             }
 
-            printf("\n%s\n", buffer);
+            sendAndReset(data.fd, buffer);
+
+            if(receiveData(data.fd, buffer) == -1)
+            {
+                break;
+            }
         }
     }
 

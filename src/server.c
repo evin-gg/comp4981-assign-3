@@ -31,75 +31,85 @@ int main(void)
     data_t data = {0};
     char   addr_str[INET_ADDRSTRLEN];
     int    retval = EXIT_SUCCESS;
-    // const char *msg    = "Hello, World\n";    // TEST
+    pid_t  p;
 
     setup(&data, addr_str);
 
-    data.cfd = accept(data.fd, NULL, 0);
-    if(data.cfd < 0)
+    while(running)
     {
-        retval = EXIT_FAILURE;
-        goto cleanup;
-    }
-
-    /* Do stuff here */
-    while(1)
-    {
-        char    buffer[BUFFER_SIZE];
-        char   *args[MAX_ARGS];
-        ssize_t bytes_received;
-
-        memset(buffer, 0, BUFFER_SIZE);
-        bytes_received = recv(data.cfd, buffer, BUFFER_SIZE, 0);
-        if(bytes_received <= 0)
+        data.cfd = accept(data.fd, NULL, 0);
+        if(data.cfd < 0)
         {
-            printf("Client disconnected.\n");
-            close(data.cfd);
-            break;
+            retval = EXIT_FAILURE;
+            goto cleanup;
         }
 
-        tokenize(buffer, args);
-        findDir(args);
-        printf("Received: %s\n", buffer);
-
-        if(isBuiltin(args))
+        p = fork();
+        if(p < 0)
         {
-            write(STDOUT_FILENO, "AAAAAAAAA", MAX_ARGS);
-            handleBuiltin(args, data.cfd);
+            perror("Fork");
         }
 
-        else
+        else if(p == 0)
         {
-            pid_t p;
-            // int   stdout_copy;
-
-            // stdout_copy = dup(STDOUT_FILENO);
-
-            p = fork();
-            if(p < 0)
+            printf("Client connected\n");
+            while(1)
             {
-                perror("Fork");
-            }
+                char    buffer[BUFFER_SIZE];
+                char   *args[MAX_ARGS];
+                ssize_t bytes_received;
 
-            else if(p == 0)
-            {
-                dup2(data.cfd, STDOUT_FILENO);
-                if(execv(args[0], args) == -1)
+                memset(buffer, 0, BUFFER_SIZE);
+                bytes_received = recv(data.cfd, buffer, BUFFER_SIZE, 0);
+                if(bytes_received <= 0)
                 {
-                    perror("execv");
+                    printf("Client disconnected.\n");
+                    close(data.cfd);
+                    break;
                 }
-                // dup2(stdout_copy, STDOUT_FILENO);
+
+                tokenize(buffer, args);
+                findDir(args);
+
+                if(isBuiltin(args))
+                {
+                    handleBuiltin(args, data.cfd);
+                }
+
+                else
+                {
+                    pid_t exec_p;
+
+                    exec_p = fork();
+                    if(exec_p < 0)
+                    {
+                        perror("exevc");
+                    }
+
+                    else if(exec_p == 0)
+                    {
+                        dup2(data.cfd, STDOUT_FILENO);
+                        if(execv(args[0], args) == -1)
+                        {
+                            perror("execv");
+                            send(data.cfd, "No command found", NO_CMD, 0);
+                            _exit(1);
+                        }
+
+                        close(data.cfd);
+                        _exit(0);
+                    }
+
+                    else
+                    {
+                        waitpid(exec_p, NULL, 0);
+                    }
+                }
 
                 freeArgs(args);
-
-                exit(0);
             }
-
-            // Send static response for now
-            // send(data.cfd, "AAAAAAAAA", MAX_ARGS, 0);
+            _exit(0);
         }
-
-        freeArgs(args);
     }
 
 cleanup:
@@ -116,7 +126,6 @@ static void setup(data_t *d, char s[INET_ADDRSTRLEN])
     setup_sig_handler();
 }
 
-/* Pairs SIGINT with sig_handler */
 static void setup_sig_handler(void)
 {
     struct sigaction sa;
@@ -143,7 +152,6 @@ static void setup_sig_handler(void)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-/* Write to stdout a shutdown message and set exit_flag to end while loop in main */
 static void sig_handler(int sig)
 {
     const char *message = "\nSIGINT received. Server shutting down.\n";

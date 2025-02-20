@@ -30,15 +30,11 @@ void findDir(char *args[MAX_ARGS])
         free(args[0]);
         args[0] = strdup("/bin/ls");
     }
-    else if(strcmp(args[0], "pwd") == 0)
+
+    if(strcmp(args[0], "cat") == 0)
     {
         free(args[0]);
-        args[0] = strdup("/usr/bin/pwd");
-    }
-    else if(strcmp(args[0], "echo") == 0)
-    {
-        free(args[0]);
-        args[0] = strdup("/usr/bin/echo");
+        args[0] = strdup("/bin/cat");
     }
 }
 
@@ -46,7 +42,7 @@ int isBuiltin(char **args)
 {
     int flag;
 
-    if(strcmp(args[0], "cd") == 0 || strcmp(args[0], "type") == 0 || strcmp(args[0], "exit") == 0)
+    if(strcmp(args[0], "cd") == 0 || strcmp(args[0], "type") == 0 || strcmp(args[0], "exit") == 0 || strcmp(args[0], "pwd") == 0 || strcmp(args[0], "echo") == 0)
     {
         flag = 1;
     }
@@ -59,6 +55,22 @@ int isBuiltin(char **args)
     return flag;
 }
 
+int isCmd(char **args)
+{
+    int flag;
+
+    if(strcmp(args[1], "cd") == 0 || strcmp(args[1], "type") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "ls") == 0 || strcmp(args[1], "pwd") == 0 || strcmp(args[1], "echo") == 0)
+    {
+        flag = 1;
+    }
+
+    else
+    {
+        flag = 0;
+    }
+    return flag;
+}
+
 void handleBuiltin(char **args, int cfd)
 {
     if(strcmp(args[0], "cd") == 0)
@@ -66,9 +78,10 @@ void handleBuiltin(char **args, int cfd)
         if(args[1] == NULL)
         {
             send(cfd, "cd: No specified directory", CD_ERR, 0);
+            return;
         }
 
-        else
+        if(args[2] == NULL)
         {
             if(chdir(args[1]) == -1)
             {
@@ -76,14 +89,18 @@ void handleBuiltin(char **args, int cfd)
             }
             send(cfd, "Successful directory change", DIR_SUCCESS, 0);
         }
+
+        else
+        {
+            send(cfd, "Too many arguments", MANY_ARGS, 0);
+        }
     }
 
     else if(strcmp(args[0], "type") == 0)
     {
-        printf("\nThe Type Arg: %s\n", args[1]);
-        if(args[1] == NULL)
+        if(args[1] == NULL || isCmd(args) == 0)
         {
-            send(cfd, "type: missing argument\n", TYPE_ERR, 0);
+            send(cfd, "type: not found\n", TYPE_ERR, 0);
         }
         else
         {
@@ -91,6 +108,57 @@ void handleBuiltin(char **args, int cfd)
             snprintf(response, sizeof(response), "%s is a shell built-in\n", args[1]);
             send(cfd, response, strlen(response), 0);
         }
+    }
+
+    else if(strcmp(args[0], "pwd") == 0)
+    {
+        char pwd[BUFFER_SIZE];
+
+        if(getcwd(pwd, BUFFER_SIZE) != NULL)
+        {
+            send(cfd, pwd, BUFFER_SIZE, 0);
+        }
+
+        else
+        {
+            perror("getcwd");
+        }
+    }
+
+    else if(strcmp(args[0], "echo") == 0)
+    {
+        if(args[1] == NULL)
+        {
+            send(cfd, "echo requires arguments", ECHO_ERR, 0);
+        }
+
+        else
+        {
+            char   buffer[BUFFER_SIZE];
+            size_t current_len;
+
+            memset(buffer, 0, BUFFER_SIZE);
+
+            current_len = 0;
+            for(int i = 1; i < MAX_ARGS && args[i] != NULL; i++)
+            {
+                current_len += strlcat(buffer + current_len, args[i], BUFFER_SIZE - current_len);
+
+                if(args[i + 1] != NULL)
+                {
+                    current_len += strlcat(buffer + current_len, " ", BUFFER_SIZE - current_len);
+                }
+            }
+            send(cfd, buffer, current_len, 0);
+        }
+    }
+
+    else if(strcmp(args[0], "exit") == 0)
+    {
+        send(cfd, "Exiting shell...", EXIT_SHELL, 0);
+        close(cfd);
+        printf("Client disconnected.\n");
+        _exit(0);
     }
 }
 
@@ -102,31 +170,40 @@ void freeArgs(char **args)
     }
 }
 
-// void forkCmd(char **args)
-// {
-//     pid_t p;
-//     p = fork();
-//     if(p < 0)
-//     {
-//         perror("Fork");
-//     }
+void sendAndReset(int fd, char *buffer)
+{
+    send(fd, buffer, strlen(buffer), 0);
+    memset(buffer, 0, BUFFER_SIZE);
+}
 
-//     else if(p == 0)
-//     {
-//         // if(execv(args[0], args) == -1)
-//         // {
-//         //     perror("execv");
-//         // }
+ssize_t receiveData(int socket_fd, char *buffer)
+{
+    ssize_t bytes_received;
 
-//         execv(args[0], args);
+    bytes_received = recv(socket_fd, buffer, BUFFER_SIZE, 0);
 
-//         freeArgs(args);
-//         exit(0);
-//     }
+    if(bytes_received <= 0)
+    {
+        printf("Server disconnected or error receiving data.\n");
+        return -1;
+    }
 
-//     else
-//     {
-//         wait(NULL);
-//         freeArgs(args);
-//     }
-// }
+    printf("%s\n", buffer);
+    return bytes_received;
+}
+
+ssize_t read_input(char *buffer, size_t buffer_size)
+{
+    ssize_t input_bytes;
+
+    input_bytes = read(STDIN_FILENO, buffer, buffer_size - 1);
+    if(input_bytes < 0)
+    {
+        perror("read");
+        return -1;
+    }
+
+    buffer[strcspn(buffer, "\n")] = 0;
+
+    return input_bytes;
+}
