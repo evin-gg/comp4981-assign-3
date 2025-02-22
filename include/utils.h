@@ -17,11 +17,11 @@
 #define MANY_ARGS 19
 
 void tokenize(char buffer[BUFFER_SIZE], char *args[MAX_ARGS]);
-void findDir(char *args[MAX_ARGS]);
-int isBuiltin(char **args);
-int isCmd(char **args);
-void handleBuiltin(char **args, int cfd);
-void freeArgs(char **args);
-void sendAndReset(int fd, char *buffer);
-ssize_t receiveData(int socket_fd, char *buffer);
+void find_dir(char *args[MAX_ARGS]);
+int is_built_in(char **args);
+int is_cmd(char **args);
+void handle_built_in(char **args, int cfd);
+void free_args(char **args);
+void send_and_reset(int fd, char *buffer);
+ssize_t receive_data(int socket_fd, char *buffer);
 ssize_t read_input(char *buffer, size_t buffer_size);

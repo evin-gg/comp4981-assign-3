@@ -18,7 +18,7 @@ void tokenize(char buffer[BUFFER_SIZE], char *args[MAX_ARGS])
     args[token_counter] = NULL;
 }
 
-void findDir(char *args[MAX_ARGS])
+void find_dir(char *args[MAX_ARGS])
 {
     if(args[0] == NULL)
     {
@@ -38,7 +38,7 @@ void findDir(char *args[MAX_ARGS])
     }
 }
 
-int isBuiltin(char **args)
+int is_built_in(char **args)
 {
     int flag;
 
@@ -55,7 +55,7 @@ int isBuiltin(char **args)
     return flag;
 }
 
-int isCmd(char **args)
+int is_cmd(char **args)
 {
     int flag;
 
@@ -71,7 +71,7 @@ int isCmd(char **args)
     return flag;
 }
 
-void handleBuiltin(char **args, int cfd)
+void handle_built_in(char **args, int cfd)
 {
     if(strcmp(args[0], "cd") == 0)
     {
@@ -98,7 +98,7 @@ void handleBuiltin(char **args, int cfd)
 
     else if(strcmp(args[0], "type") == 0)
     {
-        if(args[1] == NULL || isCmd(args) == 0)
+        if(args[1] == NULL || is_cmd(args) == 0)
         {
             send(cfd, "type: not found\n", TYPE_ERR, 0);
         }
@@ -162,7 +162,7 @@ void handleBuiltin(char **args, int cfd)
     }
 }
 
-void freeArgs(char **args)
+void free_args(char **args)
 {
     for(int i = 0; args[i] != NULL; i++)
     {
@@ -170,13 +170,13 @@ void freeArgs(char **args)
     }
 }
 
-void sendAndReset(int fd, char *buffer)
+void send_and_reset(int fd, char *buffer)
 {
     send(fd, buffer, strlen(buffer), 0);
     memset(buffer, 0, BUFFER_SIZE);
 }
 
-ssize_t receiveData(int socket_fd, char *buffer)
+ssize_t receive_data(int socket_fd, char *buffer)
 {
     ssize_t bytes_received;
 

@@ -69,11 +69,11 @@ int main(void)
                 }
 
                 tokenize(buffer, args);
-                findDir(args);
+                find_dir(args);
 
-                if(isBuiltin(args))
+                if(is_built_in(args))
                 {
-                    handleBuiltin(args, data.cfd);
+                    handle_built_in(args, data.cfd);
                 }
 
                 else
@@ -106,7 +106,7 @@ int main(void)
                     }
                 }
 
-                freeArgs(args);
+                free_args(args);
             }
             _exit(0);
         }

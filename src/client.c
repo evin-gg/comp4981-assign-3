@@ -57,9 +57,9 @@ int main(int argc, char *argv[])
                 running = 0;
             }
 
-            sendAndReset(data.fd, buffer);
+            send_and_reset(data.fd, buffer);
 
-            if(receiveData(data.fd, buffer) == -1)
+            if(receive_data(data.fd, buffer) == -1)
             {
                 break;
             }
