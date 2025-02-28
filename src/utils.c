@@ -59,7 +59,7 @@ int is_cmd(char **args)
 {
     int flag;
 
-    if(strcmp(args[1], "cd") == 0 || strcmp(args[1], "type") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "ls") == 0 || strcmp(args[1], "pwd") == 0 || strcmp(args[1], "echo") == 0)
+    if(strcmp(args[1], "cd") == 0 || strcmp(args[1], "type") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "ls") == 0 || strcmp(args[1], "pwd") == 0 || strcmp(args[1], "echo") == 0 || strcmp(args[1], "cat") == 0)
     {
         flag = 1;
     }
